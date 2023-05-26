@@ -9,7 +9,6 @@ from data_utils import utils
 from sgd import sgd
 from q1c_neural import forward, forward_backward_prop
 
-
 VOCAB_EMBEDDING_PATH = "data/lm/vocab.embeddings.glove.txt"
 BATCH_SIZE = 50
 NUM_OF_SGD_ITERATIONS = 40000
@@ -76,13 +75,19 @@ def int_to_one_hot(number, dim):
 
 
 def lm_wrapper(in_word_index, out_word_index, num_to_word_embedding, dimensions, params):
-
     data = np.zeros([BATCH_SIZE, input_dim])
     labels = np.zeros([BATCH_SIZE, output_dim])
 
     # Construct the data batch and run you backpropogation implementation
     ### YOUR CODE HERE
-    raise NotImplementedError
+
+    batch_indexes = np.random.choice(np.arange(len(in_word_index)), size=BATCH_SIZE, replace=False)
+    for i, index_on_data in enumerate(batch_indexes):
+        data[i] = num_to_word_embedding[in_word_index[index_on_data]]
+        labels[i] = int_to_one_hot(out_word_index[index_on_data], output_dim)
+
+    cost, grad = forward_backward_prop(data, labels, params, dimensions)
+
     ### END YOUR CODE
 
     cost /= BATCH_SIZE
@@ -101,7 +106,11 @@ def eval_neural_lm(eval_data_path):
 
     perplexity = 0
     ### YOUR CODE HERE
-    raise NotImplementedError
+    for i, example_index in enumerate(in_word_index):
+        prob = forward(num_to_word_embedding[example_index], out_word_index[i], params, dimensions)
+        perplexity += np.log2(prob) / num_of_examples
+
+    perplexity = np.power(2, -perplexity)
     ### END YOUR CODE
 
     return perplexity
@@ -136,14 +145,14 @@ if __name__ == "__main__":
     output_dim = vocabsize
     dimensions = [input_dim, hidden_dim, output_dim]
     params = np.random.randn((input_dim + 1) * hidden_dim + (
-        hidden_dim + 1) * output_dim, )
+            hidden_dim + 1) * output_dim, )
     print(f"#params: {len(params)}")
     print(f"#train examples: {num_of_examples}")
 
     # run SGD
     params = sgd(
-            lambda vec: lm_wrapper(in_word_index, out_word_index, num_to_word_embedding, dimensions, vec),
-            params, LEARNING_RATE, NUM_OF_SGD_ITERATIONS, None, True, 1000)
+        lambda vec: lm_wrapper(in_word_index, out_word_index, num_to_word_embedding, dimensions, vec),
+        params, LEARNING_RATE, NUM_OF_SGD_ITERATIONS, None, True, 1000)
 
     print(f"training took {time.time() - startTime} seconds")
 
